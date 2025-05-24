@@ -46,6 +46,7 @@ from dynamicprompts.commands import (
     VariantOption,
     WildcardCommand,
     WrapCommand,
+    ProbabilityCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -148,10 +149,6 @@ def _configure_literal_sequence(
     is_wildcard_literal: bool = False,
 ) -> pp.ParserElement:
     # Characters that are not allowed in a literal
-    # - { denotes the start of a variant (or whatever variant_start is set to  )
-    # - # denotes the start of a comment
-    # - $ denotes the start of a variable command (or whatever variable_start is set to)
-    # - % denotes the start of a wrap command (or whatever wrap_start is set to)
     non_literal_chars = (
         rf"#{parser_config.variant_start}"
         rf"{parser_config.variable_start}"
@@ -214,7 +211,6 @@ def _configure_variants(
         + OPT_WS
         + variant_end,
     )
-
     return variants.leave_whitespace()
 
 
@@ -233,6 +229,26 @@ def _configure_variable_access(
     )
     return variable_access.leave_whitespace()
 
+
+def _configure_probabilities(
+    parser_config: ParserConfig,
+    prompt: pp.ParserElement,
+) -> pp.ParserElement:
+    START_EXP = pp.Suppress(parser_config.variant_start)
+    END_EXP = pp.Suppress(parser_config.variant_end)
+    SEPARATOR = pp.Literal("::")
+
+    chance_value = pp.Word(pp.nums + ".").setParseAction(lambda t: float(t[0]))("chance")
+    probability_block = pp.Group(
+        START_EXP
+        + OPT_WS
+        + chance_value
+        + SEPARATOR
+        + pp.Optional(prompt()("default"))
+        + OPT_WS
+        + END_EXP
+    )
+    return probability_block.leave_whitespace()
 
 def _configure_variable_assignment(
     parser_config: ParserConfig,
@@ -399,6 +415,13 @@ def _parse_variable_access_command(
     parts = parse_result[0].as_dict()
     return VariableAccessCommand(name=parts["name"], default=parts.get("default"))
 
+def _parse_probabilities_command(
+    parse_result: pp.ParseResults,
+) -> ProbabilityCommand:
+    parts = parse_result[0].as_dict()
+    val = parts.get("default", parts.get('value'))
+    return ProbabilityCommand(value=val, chance=parts["chance"])
+
 
 def _parse_wildcard_variable_access_command(
     parse_result: pp.ParseResults,
@@ -448,6 +471,10 @@ def create_parser(
         parser_config=parser_config,
         prompt=variant_prompt,
     )
+    probabilities = _configure_probabilities(
+        parser_config=parser_config,
+        prompt=variant_prompt,
+    )
     wildcard_variable_access = _configure_variable_access(
         parser_config=parser_config,
         prompt=variant_prompt,
@@ -480,7 +507,8 @@ def create_parser(
     )
 
     chunk = (
-        variable_assignment
+        probabilities
+        | variable_assignment
         | variable_access
         | wrap_command
         | variants
@@ -488,10 +516,11 @@ def create_parser(
         | literal_sequence
     )
     variant_chunk = (
-        variable_access | wrap_command | variants | wildcard | variant_literal_sequence
+        variable_access | wrap_command | probabilities | variants | wildcard | variant_literal_sequence
     )
     wildcard_chunk = (
         wildcard_variable_access
+        | probabilities
         | variants
         | wildcard_literal_sequence
         | variant_literal_sequence
@@ -514,6 +543,7 @@ def create_parser(
     wildcard_literal_sequence.set_parse_action(_parse_literal_command)
     variant_literal_sequence.set_parse_action(_parse_literal_command)
     variable_access.set_parse_action(_parse_variable_access_command)
+    probabilities.set_parse_action(_parse_probabilities_command)
     wildcard_variable_access.set_parse_action(_parse_wildcard_variable_access_command)
     variable_assignment.set_parse_action(_parse_variable_assignment_command)
     prompt.set_parse_action(_parse_sequence_or_single_command)

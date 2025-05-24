@@ -82,3 +82,35 @@ class TestRandomGenerator:
             "I saw a hippo",
             "I saw a giraffe",
         ]
+
+    # including seeds with following tests to get predictable results for assertion
+    def test_probability_basic(self, generator: RandomPromptGenerator):
+        s = """{0.5::beach}"""
+        prompts = generator.generate(s, 10, seeds=['1','2','3','4','5','6','7','8','9','10'])
+        assert prompts == ['beach', '', '', 'beach', 'beach', 'beach', '', 'beach', 'beach', '']
+
+    def test_probability_negative_test_variant(self, generator: RandomPromptGenerator):
+        s = """{0.5::beach|pool}"""
+        prompts = generator.generate(s, 10, seeds=['5','1','457','2','5','85','151','8','523','10'])
+        assert prompts != ['beach', '', '', 'beach', 'beach', 'beach', '', 'beach', 'beach', '']
+        
+    def test_probability_zero_chance(self, generator: RandomPromptGenerator):
+        s = """{0.0::beach }"""
+        prompts = generator.generate(s, 10, seeds=['1','2','3','4','5','6','7','8','9','10'])
+        assert prompts == ['', '', '', '', '', '', '', '', '', '']
+        s = """{0::beach}"""
+        prompts = generator.generate(s, 10, seeds=['1','2','3','4','5','6','7','8','9','10'])
+        assert prompts == ['', '', '', '', '', '', '', '', '', '']
+        
+    def test_probability_solid_chance(self, generator: RandomPromptGenerator):
+        s = """{1.0::beach}"""
+        prompts = generator.generate(s, 10, seeds=['1','2','3','4','5','6','7','8','9','10'])
+        assert prompts == ['beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach']
+        s = """{1::beach}"""
+        prompts = generator.generate(s, 10, seeds=['1','2','3','4','5','6','7','8','9','10'])
+        assert prompts == ['beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach', 'beach']
+        
+    def test_probability_basic_nested(self, generator: RandomPromptGenerator):
+        s = """{0.5::{beach|pool}}"""
+        prompts = generator.generate(s, 10, seeds=['124','12345','16223','1232541','2151','1241251','4363','8164','9423','241'])
+        assert prompts == ['', 'beach', '', '', 'pool', '', '', 'pool', '', '']

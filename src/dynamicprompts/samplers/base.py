@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Generator
 
 from dynamicprompts.commands import (
     Command,
@@ -9,6 +10,7 @@ from dynamicprompts.commands import (
     VariantCommand,
     WildcardCommand,
     WrapCommand,
+    ProbabilityCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -20,7 +22,6 @@ from dynamicprompts.types import ResultGen
 from dynamicprompts.utils import rotate_and_join
 
 logger = logging.getLogger(__name__)
-
 
 class Sampler:
     def generator_from_command(
@@ -36,6 +37,8 @@ class Sampler:
             return self._get_sequence(command, context)
         if isinstance(command, VariantCommand):
             return self._get_variant(command, context)
+        if isinstance(command, ProbabilityCommand):
+            return self._get_probability(command, context)
         if isinstance(command, WildcardCommand):
             return self._get_wildcard(command, context)
         if isinstance(command, VariableAssignmentCommand):
@@ -66,6 +69,17 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         return self._unsupported_command(command)
+
+    def _get_probability(
+        self,
+        command: ProbabilityCommand,
+        context: SamplingContext,
+    ) -> ResultGen:
+        while True:
+            if context.rand.random() < command.chance:
+                yield next(context.generator_from_command(command.value))
+            else:
+                yield SamplingResult(text="")
 
     def _get_sequence(
         self,

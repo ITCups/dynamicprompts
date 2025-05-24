@@ -1,0 +1,13 @@
+*.txt text
+*.html text
+*.css text
+*.js text
+*.py text
+*.md text
+*.yaml text
+*.yml text
+*.json text
+.gitattributes text
+.gitignore text
+LICENSE text
+pyproject.toml text

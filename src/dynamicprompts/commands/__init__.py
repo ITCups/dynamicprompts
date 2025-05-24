@@ -11,9 +11,9 @@ __all__ = [
     "LiteralCommand",
     "SamplingMethod",
     "SequenceCommand",
-    "ChanceCommand"
     "VariantCommand",
     "VariantOption",
+    "ProbabilityCommand",
     "WildcardCommand",
     "WrapCommand",
 ]

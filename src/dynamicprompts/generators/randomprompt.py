@@ -53,7 +53,6 @@ class RandomPromptGenerator(PromptGenerator):
     ) -> list[str]:
         if not template:
             template = ""
-
         if seeds:
             if isinstance(seeds, int):
                 seeds = [seeds]
@@ -69,8 +68,10 @@ class RandomPromptGenerator(PromptGenerator):
             for seed in seeds:
                 self._context.rand.seed(seed)
                 prompts.append(str(next(iter(gen))))
+                self._context.prompt_meta.reset()
         else:
-            prompts = [
-                str(p) for p in self._context.sample_prompts(template, num_images)
-            ]
+            prompts = []
+            for p in self._context.sample_prompts(template, num_images):
+                prompts.append(str(p))
+                self._context.prompt_meta.reset()
         return prompts

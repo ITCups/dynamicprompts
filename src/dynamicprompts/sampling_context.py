@@ -11,8 +11,7 @@ from dynamicprompts.commands.variable_commands import VariableAssignmentCommand
 from dynamicprompts.constants import DEFAULT_RANDOM
 from dynamicprompts.enums import SamplingMethod
 from dynamicprompts.parser.config import ParserConfig, default_parser_config
-from dynamicprompts.sampling_result import SamplingResult
-from dynamicprompts.types import ResultGen
+from dynamicprompts.types import ResultGen, SamplingResult, PromptMeta
 from dynamicprompts.wildcards import WildcardManager
 
 if TYPE_CHECKING:
@@ -42,6 +41,9 @@ class SamplingContext:
     parser_config: ParserConfig = default_parser_config
     rand: Random = DEFAULT_RANDOM
     variables: dict[str, Command] = dataclasses.field(default_factory=dict)
+    # used during generation, to get intermediate about generation
+    # for example: used in conditional commands, to search against so far generated prompt
+    prompt_meta: PromptMeta = PromptMeta()
 
     # Value for variables that aren't defined in the present context.
     # None will raise an error.

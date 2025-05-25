@@ -37,16 +37,30 @@ def dedupe(arr: list[T], key=lambda x: x) -> tuple[T, ...]:
     return tuple(result)
 
 
-def rotate_all(generators: Iterable[ResultGen]) -> list[SamplingResult]:
-    return [next(gen) for gen in generators]
+def rotate_all(generators: Iterable[ResultGen], context) -> list[SamplingResult]:
+    """
+        :param context (SamplingContext): Sampling context, used to access prompt meta 
+        # NOTE: not using a typehint to avoid cycling dependency
+    """
+    results = []
+    for g in generators:
+        d = next(g)
+        context.prompt_meta.collected_text=context.prompt_meta.collected_text + d.text
+        results.append(d)
+    return results
 
 
 def rotate_and_join(
     generators: Iterable[ResultGen],
     *,
     separator: str,
+    context
 ) -> SamplingResult:
-    return SamplingResult.joined(rotate_all(generators), separator=separator)
+    """
+        :param context (SamplingContext): Sampling context, used to access prompt meta 
+        # NOTE: not using a typehint to avoid cycling dependency
+    """
+    return SamplingResult.joined(rotate_all(generators, context), separator=separator)
 
 
 def next_sampler_next_value(

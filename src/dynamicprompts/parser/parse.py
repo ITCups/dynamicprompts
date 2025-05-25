@@ -46,7 +46,8 @@ from dynamicprompts.commands import (
     VariantOption,
     WildcardCommand,
     WrapCommand,
-    ProbabilityCommand
+    ProbabilityCommand,
+    ConditionCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -229,6 +230,39 @@ def _configure_variable_access(
     )
     return variable_access.leave_whitespace()
 
+
+
+def _configure_condition_parser(
+    parser_config: ParserConfig,
+    prompt: pp.ParserElement,
+) -> pp.ParserElement:
+    START_EXP = pp.Suppress(parser_config.variant_start)
+    END_EXP = pp.Suppress(parser_config.variant_end)
+    SEPARATOR_SYMBOLS = "::"
+    SEPARATOR = pp.Literal(SEPARATOR_SYMBOLS)
+    
+    # Condition part - any regex pattern except pure digits, separator and block symbols (like { and } by default)
+    # NOTE: current implementation does not support nested blocks inside condition, cannot possibly predict all possible combinations for match block
+    # also not eager to write special logic requiring that block to be sampled first
+    condition = pp.Combine(
+        pp.OneOrMore(
+            ~pp.Word(pp.nums)  # Negative lookahead for pure digits
+            + pp.CharsNotIn(parser_config.variant_start + parser_config.variant_end + SEPARATOR_SYMBOLS) # prevent including in conditional part separator or blocks symbols
+        )
+    )("condition")
+    
+    text_pair_block = pp.Group(
+        START_EXP
+        + OPT_WS
+        + ~pp.Word(pp.nums)  # Negative lookahead to reject numbers at start
+        + condition
+        + SEPARATOR
+        + pp.Optional(prompt()("default"))
+        + OPT_WS
+        + END_EXP
+    )
+    
+    return text_pair_block.leave_whitespace()
 
 def _configure_probabilities(
     parser_config: ParserConfig,
@@ -422,6 +456,10 @@ def _parse_probabilities_command(
     val = parts.get("default", parts.get('value'))
     return ProbabilityCommand(value=val, chance=parts["chance"])
 
+def _parse_condition_command(parse_result: pp.ParseResults) -> ConditionCommand:
+    parts = parse_result[0].as_dict()
+    val = parts.get("default")
+    return ConditionCommand(value=val, regex_expression=parts["condition"])
 
 def _parse_wildcard_variable_access_command(
     parse_result: pp.ParseResults,
@@ -475,6 +513,10 @@ def create_parser(
         parser_config=parser_config,
         prompt=variant_prompt,
     )
+    condition = _configure_condition_parser(
+        parser_config=parser_config,
+        prompt=variant_prompt,
+    )
     wildcard_variable_access = _configure_variable_access(
         parser_config=parser_config,
         prompt=variant_prompt,
@@ -508,6 +550,7 @@ def create_parser(
 
     chunk = (
         probabilities
+        | condition
         | variable_assignment
         | variable_access
         | wrap_command
@@ -516,10 +559,11 @@ def create_parser(
         | literal_sequence
     )
     variant_chunk = (
-        variable_access | wrap_command | probabilities | variants | wildcard | variant_literal_sequence
+        variable_access | wrap_command | probabilities | condition | variants | wildcard | variant_literal_sequence
     )
     wildcard_chunk = (
         wildcard_variable_access
+        | condition
         | probabilities
         | variants
         | wildcard_literal_sequence
@@ -543,6 +587,7 @@ def create_parser(
     wildcard_literal_sequence.set_parse_action(_parse_literal_command)
     variant_literal_sequence.set_parse_action(_parse_literal_command)
     variable_access.set_parse_action(_parse_variable_access_command)
+    condition.set_parse_action(_parse_condition_command)
     probabilities.set_parse_action(_parse_probabilities_command)
     wildcard_variable_access.set_parse_action(_parse_wildcard_variable_access_command)
     variable_assignment.set_parse_action(_parse_variable_assignment_command)

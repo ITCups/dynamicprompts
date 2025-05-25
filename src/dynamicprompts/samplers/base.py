@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Generator
+import re
 
 from dynamicprompts.commands import (
     Command,
@@ -10,7 +11,8 @@ from dynamicprompts.commands import (
     VariantCommand,
     WildcardCommand,
     WrapCommand,
-    ProbabilityCommand
+    ProbabilityCommand,
+    ConditionCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -39,6 +41,8 @@ class Sampler:
             return self._get_variant(command, context)
         if isinstance(command, ProbabilityCommand):
             return self._get_probability(command, context)
+        if isinstance(command, ConditionCommand):
+            return self._get_by_condition(command, context)
         if isinstance(command, WildcardCommand):
             return self._get_wildcard(command, context)
         if isinstance(command, VariableAssignmentCommand):
@@ -81,6 +85,19 @@ class Sampler:
             else:
                 yield SamplingResult(text="")
 
+    def _get_by_condition(
+        self,
+        command: ConditionCommand,
+        context: SamplingContext,
+    ) -> ResultGen:
+        while True:
+            pattern = r'(?<!\w)' + command.regex_expression + '(?!\w)'
+            match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
+            if match:
+                yield next(context.generator_from_command(command.value))
+            else:
+                yield SamplingResult(text="")
+
     def _get_sequence(
         self,
         command: SequenceCommand,
@@ -90,7 +107,7 @@ class Sampler:
         sub_generators = [context.generator_from_command(c) for c in tokens]
 
         while True:
-            yield rotate_and_join(sub_generators, separator=command.separator)
+            yield rotate_and_join(sub_generators, separator=command.separator, context = context)
 
     def _get_literal(
         self,

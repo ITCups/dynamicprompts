@@ -114,3 +114,54 @@ class TestRandomGenerator:
         s = """{0.5::{beach|pool}}"""
         prompts = generator.generate(s, 10, seeds=['124','12345','16223','1232541','2151','1241251','4363','8164','9423','241'])
         assert prompts == ['', 'beach', '', '', 'pool', '', '', 'pool', '', '']
+
+    def test_condition_basic_1(self, generator: RandomPromptGenerator):
+        s = """fire {fire::ball}"""
+        prompts = generator.generate(s)
+        assert prompts == ["fire ball"]
+
+    def test_condition_basic_2(self, generator: RandomPromptGenerator):
+        s = """fire, {fire::ball}"""
+        prompts = generator.generate(s)
+        assert prompts == ["fire, ball"]
+
+
+    def test_condition_basic_3(self, generator: RandomPromptGenerator):
+        s = """,fire{fire::ball}"""
+        prompts = generator.generate(s)
+        assert prompts == [",fireball"]
+        
+    def test_condition_basic_nested_1(self, generator: RandomPromptGenerator):
+        s = r"""fire{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit}{magical shield:: that is deflected by the shield}{(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire}{fireplace::, person is resting}{(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['firebolt hit a wall', 'firestrike hit a wall', 'firebolt hit a wall', 'firebolt hit a wall', 'fireblast hit a wall']
+
+    def test_condition_basic_nested_2(self, generator: RandomPromptGenerator):
+        s = r"""person, magical shield, fire{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit}{magical shield:: that is deflected by the shield}{(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire}{fireplace::, person is resting}{(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['person, magical shield, firebolt hit that is deflected by the shield', 'person, magical shield, firestrike hit that is deflected by the shield', 'person, magical shield, firebolt hit that is deflected by the shield', 'person, magical shield, firebolt hit that is deflected by the shield', 'person, magical shield, fireblast hit that is deflected by the shield']
+
+    def test_condition_basic_nested_3(self, generator: RandomPromptGenerator):
+        s = r"""person, fire{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit}{magical shield:: that is deflected by the shield}{(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire}{fireplace::, person is resting}{(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['person, firebolt hit, person is on fire', 'person, firestrike hit, person is on fire', 'person, firebolt hit, person is on fire', 'person, firebolt hit, person is on fire', 'person, fireblast hit, person is on fire']
+        
+    def test_condition_basic_nested_4(self, generator: RandomPromptGenerator):
+        s = r"""person, fireplace{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit}{magical shield:: that is deflected by the shield}{(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire}{fireplace::, person is resting}{(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['person, fireplace , person is resting', 'person, fireplace , person is resting', 'person, fireplace , person is resting', 'person, fireplace , person is resting', 'person, fireplace , person is resting']
+        
+    def test_condition_negative_1(self, generator: RandomPromptGenerator):
+        s = """fire{water::ball}"""
+        prompts = generator.generate(s)
+        assert prompts == ["fire"]
+
+    def test_condition_negative_2(self, generator: RandomPromptGenerator):
+        s = """{fire::ball}fire"""
+        prompts = generator.generate(s)
+        assert prompts == ["fire"]
+
+    def test_condition_negative_3(self, generator: RandomPromptGenerator):
+        s = """fireplace{fire::ball}"""
+        prompts = generator.generate(s)
+        assert prompts == ["fireplace"]

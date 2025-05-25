@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from typing import Generator, Iterable, List
 
 from dynamicprompts.commands import Command
@@ -11,6 +12,15 @@ CommandList = List[Command]
 CommandListGen = Generator[CommandList, None, None]
 StringIter = Iterable[str]
 
+@dataclasses.dataclass
+class PromptMeta:
+    collected_text = ""
+    
+    def reset(self):
+        self.collected_text = ""
+        
+    def __repr__(self):
+        return f"{self.collected_text}"
 
 def to_result_gen(values: Iterable[SamplingResult | str]) -> ResultGen:
     for s in values:

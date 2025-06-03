@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from typing import Generator
 import re
@@ -24,6 +25,7 @@ from dynamicprompts.types import ResultGen
 from dynamicprompts.utils import rotate_and_join
 
 logger = logging.getLogger(__name__)
+
 
 class Sampler:
     def generator_from_command(
@@ -91,12 +93,13 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            pattern = r'(?<!\w)' + command.regex_expression + '(?!\w)'
+            pattern = command.regex_expression
             match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
             if match:
                 yield next(context.generator_from_command(command.value))
             else:
                 yield SamplingResult(text="")
+
 
     def _get_sequence(
         self,
@@ -107,7 +110,7 @@ class Sampler:
         sub_generators = [context.generator_from_command(c) for c in tokens]
 
         while True:
-            yield rotate_and_join(sub_generators, separator=command.separator, context = context)
+            yield rotate_and_join(sub_generators, separator=command.separator)
 
     def _get_literal(
         self,
@@ -115,6 +118,7 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
+            context.prompt_meta.collected_text = context.prompt_meta.collected_text + command.literal
             yield SamplingResult(text=command.literal)
 
     def _get_variable(

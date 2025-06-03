@@ -107,7 +107,6 @@ class RandomSampler(Sampler):
                 yield rotate_and_join(
                     sub_generators,
                     separator=command.separator,
-                    context=context
                 )
 
     def _get_wildcard(

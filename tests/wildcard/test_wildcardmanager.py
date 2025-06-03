@@ -121,6 +121,8 @@ def test_get_all_values_with_missing_wildcard(wildcard_manager: WildcardManager)
 
 def test_hierarchy(wildcard_manager: WildcardManager):
     root = wildcard_manager.tree.root
+    for name, item in root.walk_items():
+        print(name)
     assert {name for name, item in root.walk_items()} == {
         "dupes",
         "animal",
@@ -139,6 +141,8 @@ def test_hierarchy(wildcard_manager: WildcardManager):
         "cars/john_deere/colors",
         "cars/john_deere/name",
         "cars/john_deere/types",
+        "condition_chance_test/chance",
+        "condition_chance_test/condition",
         "cars/porsche/colors",
         "cars/porsche/name",
         "cars/porsche/types",

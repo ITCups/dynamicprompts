@@ -162,6 +162,16 @@ class TestRandomGenerator:
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
         assert prompts == ['metal, boiling', 'metal, boiling', 'metal, boiling', 'metal, boiling', 'metal, boiling']
 
+    def test_condition_basic_if_else_1(self, generator: RandomPromptGenerator):
+        s = """fire{fire::ball|bolt}"""
+        prompts = generator.generate(s)
+        assert prompts == ["fireball"] 
+
+    def test_condition_basic_if_else_2(self, generator: RandomPromptGenerator):
+        s = """water{fire::ball|bolt}"""
+        prompts = generator.generate(s)
+        assert prompts == ['waterbolt']
+
     def test_condition_chance_wildcard(self, generator: RandomPromptGenerator):
         s = """__condition_chance_test/chance__ __condition_chance_test/condition__"""
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
@@ -204,6 +214,6 @@ class TestRandomGenerator:
         assert prompts == ["fire"]
 
     def test_condition_negative_3(self, generator: RandomPromptGenerator):
-        s = """fireplace{fire\s::ball}"""
+        s = """fireplace{fire\\s::ball}"""
         prompts = generator.generate(s)
         assert prompts == ["fireplace"]

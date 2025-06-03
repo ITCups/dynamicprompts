@@ -96,9 +96,9 @@ class Sampler:
             pattern = command.regex_expression
             match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
             if match:
-                yield next(context.generator_from_command(command.value))
+                yield next(context.generator_from_command(command.if_value))
             else:
-                yield SamplingResult(text="")
+                yield next(context.generator_from_command(command.else_value))
 
 
     def _get_sequence(

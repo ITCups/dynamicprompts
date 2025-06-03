@@ -253,6 +253,7 @@ def _configure_condition_parser(
     END_EXP = pp.Suppress(parser_config.variant_end)
     SEPARATOR_SYMBOLS = "::"
     SEPARATOR = pp.Literal(SEPARATOR_SYMBOLS)
+    DELIM = pp.Literal("|")
     
     # Condition part - any regex pattern except pure digits, separator and block symbols (like { and } by default)
     # NOTE: current implementation does not support nested blocks inside condition, cannot possibly predict all possible combinations for match block
@@ -270,8 +271,10 @@ def _configure_condition_parser(
         + OPT_WS
         + SEPARATOR
         + OPT_WS
-        + pp.Optional(prompt()("default"))
+        + pp.Optional(prompt()("if_value"))
         + OPT_WS
+        + pp.Optional(DELIM)
+        + pp.Optional(prompt()("else_value"))
         + END_EXP
     )
     
@@ -471,8 +474,9 @@ def _parse_probabilities_command(
 
 def _parse_condition_command(parse_result: pp.ParseResults) -> ConditionCommand:
     parts = parse_result[0].as_dict()
-    val = parts.get("default")
-    return ConditionCommand(value=val, regex_expression=parts["condition"])
+    if_value = parts.get("if_value", LiteralCommand(""))
+    else_value = parts.get("else_value", LiteralCommand(""))
+    return ConditionCommand(if_value=if_value, else_value=else_value, regex_expression=parts["condition"])
 
 def _parse_wildcard_variable_access_command(
     parse_result: pp.ParseResults,

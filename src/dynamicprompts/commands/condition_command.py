@@ -11,5 +11,5 @@ from dynamicprompts.enums import SamplingMethod
 class ConditionCommand(Command):
     """Command that describes token used for including text based on condition, currently adds text if another text is already in a prompt"""
     value: Command
-    regex_expression: str = ""
+    regex_expression: Command
     sampling_method: SamplingMethod = SamplingMethod.RANDOM

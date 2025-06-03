@@ -28,6 +28,7 @@ class RandomPromptGenerator(PromptGenerator):
         wildcard_manager: WildcardManager | None = None,
         seed: int | None = None,
         unlink_seed_from_prompt: bool = False,
+        clean_prompts: bool = False,
         ignore_whitespace: bool = False,
         parser_config: ParserConfig = default_parser_config,
     ) -> None:
@@ -36,6 +37,7 @@ class RandomPromptGenerator(PromptGenerator):
             wildcard_manager=wildcard_manager,
             default_sampling_method=SamplingMethod.RANDOM,
             ignore_whitespace=ignore_whitespace,
+            clean_prompts=clean_prompts,
             parser_config=parser_config,
             rand=_get_random(
                 seed=seed,
@@ -74,4 +76,6 @@ class RandomPromptGenerator(PromptGenerator):
             for p in self._context.sample_prompts(template, num_images):
                 prompts.append(str(p))
                 self._context.prompt_meta.reset()
+        if self._context.clean_prompts:
+            prompts = self.clean_prompts(prompts)
         return prompts

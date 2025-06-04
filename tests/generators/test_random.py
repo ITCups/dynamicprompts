@@ -162,6 +162,7 @@ class TestRandomGenerator:
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
         assert prompts == ['metal, boiling', 'metal, boiling', 'metal, boiling', 'metal, boiling', 'metal, boiling']
 
+
     def test_condition_basic_if_else_1(self, generator: RandomPromptGenerator):
         s = """fire{fire::ball|bolt}"""
         prompts = generator.generate(s)
@@ -175,7 +176,7 @@ class TestRandomGenerator:
     def test_condition_chance_wildcard(self, generator: RandomPromptGenerator):
         s = """__condition_chance_test/chance__ __condition_chance_test/condition__"""
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
-        assert prompts == ['water  bolt  bolt  bolt  bolt ', '         ', '         ', ' fire  ball  ball  ball  ball', 'water  bolt  bolt  bolt  bolt ']
+        assert prompts == ['water  bolt ', '   ', '   ', ' fire  ball', 'water  bolt ']
 
     def test_condition_basic_nested_1(self, generator: RandomPromptGenerator):
         s = r"""fire{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit} {magical shield:: that is deflected by the shield} {(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire} {fireplace::, person is resting} {(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
@@ -217,3 +218,17 @@ class TestRandomGenerator:
         s = """fireplace{fire\\s::ball}"""
         prompts = generator.generate(s)
         assert prompts == ["fireplace"]
+        
+    def test_condition_basic_comments_1(self, generator: RandomPromptGenerator):
+        s = r"""{*fire?*}{fire\?::hot!}"""
+        prompts = generator.generate(s)
+        assert prompts == ['hot!']
+    def test_condition_basic_comments_2(self, generator: RandomPromptGenerator):
+        s = r"""{*cinders and fire?*}{fire\?::hot!}"""
+        prompts = generator.generate(s)
+        assert prompts == ['hot!']
+        
+    def test_condition_basic_test_comment_basic_1(self, generator: RandomPromptGenerator):
+        s = """{*comment*}"""
+        prompts = generator.generate(s)
+        assert prompts == ['']

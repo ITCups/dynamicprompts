@@ -13,7 +13,8 @@ from dynamicprompts.commands import (
     WildcardCommand,
     WrapCommand,
     ProbabilityCommand,
-    ConditionCommand
+    ConditionCommand,
+    CommentCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -45,6 +46,8 @@ class Sampler:
             return self._get_probability(command, context)
         if isinstance(command, ConditionCommand):
             return self._get_by_condition(command, context)
+        if isinstance(command, CommentCommand):
+            return self._process_comment(command, context)
         if isinstance(command, WildcardCommand):
             return self._get_wildcard(command, context)
         if isinstance(command, VariableAssignmentCommand):
@@ -93,7 +96,8 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            pattern = command.regex_expression
+            pattern = next(context.generator_from_command(command.regex_expression, False)).text
+            
             match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
             if match:
                 yield next(context.generator_from_command(command.if_value))
@@ -120,6 +124,17 @@ class Sampler:
         while True:
             context.prompt_meta.collected_text = context.prompt_meta.collected_text + command.literal
             yield SamplingResult(text=command.literal)
+
+    def _process_comment(
+        self,
+        command: CommentCommand,
+        context: SamplingContext,
+    ) -> ResultGen:
+        """Adds comments content to prompt_meta but does not returns it for prompt generation 
+        """
+        while True:
+            context.prompt_meta.collected_text = context.prompt_meta.collected_text + command.literal
+            yield SamplingResult(text="")
 
     def _get_variable(
         self,

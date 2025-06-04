@@ -48,7 +48,8 @@ from dynamicprompts.commands import (
     WildcardCommand,
     WrapCommand,
     ProbabilityCommand,
-    ConditionCommand
+    ConditionCommand,
+    CommentCommand
 )
 from dynamicprompts.commands.variable_commands import (
     VariableAccessCommand,
@@ -158,6 +159,7 @@ def _configure_literal_sequence(
         rf"{parser_config.variable_start}"
         rf"{parser_config.wrap_start}"
     )
+    separator_lookahead = ""
 
     if is_variant_literal:
         # Inside a variant the following characters are also not allowed
@@ -233,7 +235,27 @@ def _configure_variable_access(
     )
     return variable_access.leave_whitespace()
 
-
+def _configure_inline_comment_parser(
+    parser_config: ParserConfig,
+    prompt: pp.ParserElement,
+) -> pp.ParserElement:
+    START_EXP = pp.Suppress(parser_config.variant_start)
+    END_EXP = pp.Suppress(parser_config.variant_end)
+    COMMENT_BLOCK_SYM = pp.Suppress("*")
+    # Stop at any block definer
+    text = pp.CharsNotIn(parser_config.variant_start + parser_config.variant_end + "*")
+    
+    # Define block comment parser
+    block_comment = pp.Group(
+        START_EXP
+        + OPT_WS
+        + COMMENT_BLOCK_SYM
+        + text("comment")
+        + COMMENT_BLOCK_SYM
+        + OPT_WS
+        + END_EXP
+    )
+    return block_comment.leave_whitespace()
 
 def _configure_condition_parser(
     parser_config: ParserConfig,
@@ -472,6 +494,13 @@ def _parse_probabilities_command(
     val = parts.get("default", parts.get('value'))
     return ProbabilityCommand(value=val, chance=parts["chance"])
 
+def _parse_inline_comment_command(parse_result: pp.ParseResults) -> ConditionCommand:
+    if parse_result:
+        parts = parse_result[0].as_dict()
+        val = parts.get("comment", "")
+        return CommentCommand(literal=val)
+    return None
+
 def _parse_condition_command(parse_result: pp.ParseResults) -> ConditionCommand:
     parts = parse_result[0].as_dict()
     if_value = parts.get("if_value", LiteralCommand(""))
@@ -534,6 +563,10 @@ def create_parser(
         parser_config=parser_config,
         prompt=variant_prompt,
     )
+    inline_comments = _configure_inline_comment_parser(
+        parser_config=parser_config,
+        prompt=variant_prompt,
+    )
     wildcard_variable_access = _configure_variable_access(
         parser_config=parser_config,
         prompt=variant_prompt,
@@ -566,7 +599,8 @@ def create_parser(
     )
 
     chunk = (
-        probabilities
+        inline_comments
+        | probabilities
         | condition
         | variable_assignment
         | variable_access
@@ -576,10 +610,11 @@ def create_parser(
         | literal_sequence
     )
     variant_chunk = (
-        variable_access | wrap_command | probabilities | condition | variants | wildcard | variant_literal_sequence
+        inline_comments | variable_access | wrap_command | probabilities | condition | variants | wildcard | variant_literal_sequence
     )
     wildcard_chunk = (
-        wildcard_variable_access
+        inline_comments
+        | wildcard_variable_access
         | condition
         | probabilities
         | variants
@@ -600,6 +635,7 @@ def create_parser(
         partial(_parse_wildcard_command, parser_config=parser_config),
     )
     variants.set_parse_action(_parse_variant_command)
+    inline_comments.set_parse_action(_parse_inline_comment_command)
     literal_sequence.set_parse_action(_parse_literal_command)
     wildcard_literal_sequence.set_parse_action(_parse_literal_command)
     variant_literal_sequence.set_parse_action(_parse_literal_command)

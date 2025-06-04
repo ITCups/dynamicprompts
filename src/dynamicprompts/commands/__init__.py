@@ -6,6 +6,7 @@ from dynamicprompts.commands.wildcard_command import WildcardCommand
 from dynamicprompts.commands.wrap_command import WrapCommand
 from dynamicprompts.commands.probability_command import ProbabilityCommand
 from dynamicprompts.commands.condition_command import ConditionCommand
+from dynamicprompts.commands.comment_command import CommentCommand
 
 __all__ = [
     "Command",
@@ -18,4 +19,5 @@ __all__ = [
     "ConditionCommand",
     "WildcardCommand",
     "WrapCommand",
+    "CommentCommand"
 ]

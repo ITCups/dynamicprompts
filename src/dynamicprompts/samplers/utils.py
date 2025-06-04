@@ -57,6 +57,9 @@ def get_wildcard_not_found_fallback(
         wildcard = str(command.wildcard)
     logger.warning(f"No values found for wildcard {wildcard!r}")
     wrapped_wildcard = context.wildcard_manager.to_wildcard(wildcard)
-    res = SamplingResult(text=wrapped_wildcard)
+    if context.clean_not_found_wildcards:
+        res = SamplingResult(text="")
+    else:
+        res = SamplingResult(text=wrapped_wildcard)
     while True:
         yield res

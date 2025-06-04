@@ -23,6 +23,7 @@ class JinjaGenerator(PromptGenerator):
         parser_config: ParserConfig = default_parser_config,
         unlink_seed_from_prompt: bool = False,
         ignore_whitespace: bool = False,
+        clean_prompts: bool = False,
         limit_prompts=False,
     ) -> None:
         """
@@ -40,6 +41,7 @@ class JinjaGenerator(PromptGenerator):
         self._wildcard_manager = wildcard_manager or WildcardManager()
         self._parser_config = parser_config
         self._unlink_seed_from_prompt = unlink_seed_from_prompt
+        self._clean_prompts = clean_prompts
         self._generators = {
             "random": RandomPromptGenerator(
                 self._wildcard_manager,
@@ -100,4 +102,6 @@ class JinjaGenerator(PromptGenerator):
 
         if self._ignore_whitespace:
             prompts = [squash_whitespace(p) for p in prompts]
+        if self._clean_prompts:
+            magic_prompts = self.clean_prompts(magic_prompts)
         return prompts

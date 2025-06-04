@@ -38,6 +38,8 @@ class SamplingContext:
         default_factory=_build_default_samplers,
     )
     ignore_whitespace: bool = False
+    clean_prompts: bool = False
+    clean_not_found_wildcards: bool = False
     parser_config: ParserConfig = default_parser_config
     rand: Random = DEFAULT_RANDOM
     variables: dict[str, Command] = dataclasses.field(default_factory=dict)

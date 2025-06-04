@@ -49,6 +49,7 @@ class FeelingLuckyGenerator(PromptGenerator):
             data = query_lexica(query)
             prompts = data["images"]
             selected_prompts = random.choices(prompts, k=num_prompts)
-            return [p["prompt"] for p in selected_prompts]
+            prompts = [p["prompt"] for p in selected_prompts]
+            return prompts
         except Exception as e:
             raise GeneratorException(f"Error while generating prompt: {e}") from e

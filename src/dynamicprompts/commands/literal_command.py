@@ -15,3 +15,6 @@ class LiteralCommand(Command):
         if isinstance(other, LiteralCommand):
             return LiteralCommand(f"{self.literal} {other.literal}")
         raise TypeError(f"Cannot concatenate LiteralCommand with {other}")
+    
+    def __str__(self) -> str:
+        return self.literal

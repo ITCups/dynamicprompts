@@ -96,14 +96,13 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            pattern = command.regex_expression
+            pattern = next(context.generator_from_command(command.regex_expression, False)).text
             
             match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
             if match:
                 yield next(context.generator_from_command(command.if_value))
             else:
                 yield next(context.generator_from_command(command.else_value))
-
 
     def _get_sequence(
         self,
@@ -122,7 +121,8 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            context.prompt_meta.collected_text = context.prompt_meta.collected_text + command.literal
+            if context.add_result_to_meta:
+                context.prompt_meta.collected_text = context.prompt_meta.collected_text + command.literal
             yield SamplingResult(text=command.literal)
 
     def _process_comment(

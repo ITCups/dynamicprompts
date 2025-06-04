@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class VariantOption:
     value: Command
     weight: float = 1.0
-
+    
+    def __str__(self):
+        return f"{self.weight}::{self.value}"
 
 @dataclasses.dataclass(frozen=True)
 class VariantCommand(Command):
@@ -52,6 +54,9 @@ class VariantCommand(Command):
         min_bound = min(self.min_bound, len(self.values))
         max_bound = min(self.max_bound, len(self.values))
         return dataclasses.replace(self, min_bound=min_bound, max_bound=max_bound)
+    
+    def __str__(self) -> str:
+        return f"{self.min_bound}-{self.max_bound}$$"+"|".join([str(t) for t in self.variants])
 
     @classmethod
     def from_literals_and_weights(

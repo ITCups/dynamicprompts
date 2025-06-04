@@ -41,6 +41,7 @@ class SamplingContext:
     clean_prompts: bool = False
     clean_not_found_wildcards: bool = False
     parser_config: ParserConfig = default_parser_config
+    add_result_to_meta: bool = True
     rand: Random = DEFAULT_RANDOM
     variables: dict[str, Command] = dataclasses.field(default_factory=dict)
     # used during generation, to get intermediate about generation
@@ -57,6 +58,9 @@ class SamplingContext:
     def with_sampling_method(self, sampling_method: SamplingMethod) -> SamplingContext:
         return dataclasses.replace(self, default_sampling_method=sampling_method)
 
+    def with_add_result_to_meta(self, conctext: SamplingContext,  add_result_to_meta: bool) -> SamplingContext:
+        return dataclasses.replace(conctext, add_result_to_meta=add_result_to_meta)
+
     @property
     def default_sampler(self) -> Sampler:
         return self.samplers[self.default_sampling_method]
@@ -64,6 +68,7 @@ class SamplingContext:
     def get_sampler_and_context(
         self,
         command: Command,
+        add_result_to_meta: bool = True
     ) -> tuple[Sampler, SamplingContext]:
         """
         Get the correct sampler instance and a sub-context (if necessary) for the given command.
@@ -84,6 +89,8 @@ class SamplingContext:
         else:
             sampler = self.samplers[self.default_sampling_method]
             context = self
+        if self.add_result_to_meta != add_result_to_meta:
+            context = self.with_add_result_to_meta(context, add_result_to_meta)
         return sampler, context
 
     def with_variables(self, variables: dict[str, Command]) -> SamplingContext:
@@ -99,8 +106,8 @@ class SamplingContext:
             _variables_being_sampled=self._variables_being_sampled | {variable},
         )
 
-    def generator_from_command(self, command: Command) -> ResultGen:
-        samp, ctx = self.get_sampler_and_context(command)
+    def generator_from_command(self, command: Command, add_result_to_meta: bool = True) -> ResultGen:
+        samp, ctx = self.get_sampler_and_context(command, add_result_to_meta)
         return samp.generator_from_command(command, ctx)
 
     def sample_prompts(

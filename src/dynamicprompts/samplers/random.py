@@ -98,7 +98,7 @@ class RandomSampler(Sampler):
                 rand=context.rand,
             )
             sub_generators = [
-                context.generator_from_command(c) for c in selected_commands
+                context.generator_from_command(c, add_result_to_meta=context.add_result_to_meta) for c in selected_commands
             ]
 
             if len(sub_generators) == 0:

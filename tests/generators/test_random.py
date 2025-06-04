@@ -175,7 +175,7 @@ class TestRandomGenerator:
     def test_condition_chance_wildcard(self, generator: RandomPromptGenerator):
         s = """__condition_chance_test/chance__ __condition_chance_test/condition__"""
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
-        assert prompts == ['water  bolt  bolt  bolt  bolt ', '         ', '         ', ' fire  ball  ball  ball  ball', 'water  bolt  bolt  bolt  bolt ']
+        assert prompts == ['water  bolt ', '   ', '   ', ' fire  ball', 'water  bolt ']
 
     def test_condition_basic_nested_1(self, generator: RandomPromptGenerator):
         s = r"""fire{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit} {magical shield:: that is deflected by the shield} {(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire} {fireplace::, person is resting} {(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
@@ -196,6 +196,11 @@ class TestRandomGenerator:
         s = r"""person, fireplace{fire::{blast|bolt|strike}} {(?!.*fireplace.*)fire.*\s::hit} {magical shield:: that is deflected by the shield} {(?!.*fireplace.*)(?!.*magical shield.*)person::, person is on fire} {fireplace::, person is resting} {(?!.*shield.*)(?!.*person.*)hit:: a wall}"""
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
         assert prompts == ['person, fireplacebolt    , person is resting ', 'person, fireplacestrike    , person is resting ', 'person, fireplacebolt    , person is resting ', 'person, fireplacebolt    , person is resting ', 'person, fireplaceblast    , person is resting ']
+
+    def test_condition_basic_nested_5(self, generator: RandomPromptGenerator):
+        s = r"""fire{{fire|water}::blast}"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['fireblast', 'fire', 'fire', 'fire', 'fireblast']
 
     def test_condition_basic_wildcard(self, generator: RandomPromptGenerator):
         s = ("""__condition_chance_test/chance__ __condition_chance_test/condition__""")

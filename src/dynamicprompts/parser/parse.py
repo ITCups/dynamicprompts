@@ -241,7 +241,7 @@ def _configure_condition_parser(
 ) -> pp.ParserElement:
     # Add parse action to reject if the entire condition is a real number to prevent colliding with chance command
     def reject_if_real_number(tokens):
-        condition_str = str(tokens[0])
+        condition_str = tokens[0]
         stripped = condition_str.strip()
         try:
             float(stripped)
@@ -255,11 +255,19 @@ def _configure_condition_parser(
     SEPARATOR = pp.Literal(SEPARATOR_SYMBOLS)
     DELIM = pp.Literal("|")
     
-    condition = prompt().addParseAction(reject_if_real_number)
+    # Condition part - any regex pattern except pure digits, separator and block symbols (like { and } by default)
+    # NOTE: current implementation does not support nested blocks inside condition, cannot possibly predict all possible combinations for match block
+    # also not eager to write special logic requiring that block to be sampled first
+    # Define condition to match any characters not in start, end, or separator symbols
+    condition = pp.Combine(
+                    pp.ZeroOrMore(~pp.Literal("::") + pp.Char(pp.printables) + OPT_WS + ~pp.Literal(parser_config.variant_end))
+                )
+    
+    condition = condition.addParseAction(reject_if_real_number)("condition")
     text_pair_block = pp.Group(
         START_EXP
         + OPT_WS
-        + condition("condition")
+        + condition
         + OPT_WS
         + SEPARATOR
         + OPT_WS

@@ -26,9 +26,6 @@ class SequenceCommand(Command):
             isinstance(t, Command) for t in self.tokens
         ), "All tokens must be Command instances"
 
-    def __str__(self) -> str:
-        return "".join([str(t) for t in self.tokens])
-
     @classmethod
     def from_literals(
         cls,

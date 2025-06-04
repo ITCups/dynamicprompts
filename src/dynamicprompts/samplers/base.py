@@ -96,7 +96,7 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            pattern = next(context.generator_from_command(command.regex_expression, False)).text
+            pattern = command.regex_expression
             
             match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
             if match:

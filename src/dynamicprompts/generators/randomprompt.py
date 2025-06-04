@@ -29,6 +29,7 @@ class RandomPromptGenerator(PromptGenerator):
         seed: int | None = None,
         unlink_seed_from_prompt: bool = False,
         clean_prompts: bool = False,
+        clean_not_found_wildcards: bool = False,
         ignore_whitespace: bool = False,
         parser_config: ParserConfig = default_parser_config,
     ) -> None:
@@ -38,6 +39,7 @@ class RandomPromptGenerator(PromptGenerator):
             default_sampling_method=SamplingMethod.RANDOM,
             ignore_whitespace=ignore_whitespace,
             clean_prompts=clean_prompts,
+            clean_not_found_wildcards = clean_not_found_wildcards,
             parser_config=parser_config,
             rand=_get_random(
                 seed=seed,

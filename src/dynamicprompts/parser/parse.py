@@ -252,29 +252,28 @@ def _configure_condition_parser(
     START_EXP = pp.Suppress(parser_config.variant_start)
     END_EXP = pp.Suppress(parser_config.variant_end)
     SEPARATOR_SYMBOLS = "::"
-    SEPARATOR = pp.Literal(SEPARATOR_SYMBOLS)
-    DELIM = pp.Literal("|")
+    SEPARATOR = pp.Suppress(SEPARATOR_SYMBOLS)
+    DELIM = pp.Suppress("|")
     
     # Condition part - any regex pattern except pure digits, separator and block symbols (like { and } by default)
     # NOTE: current implementation does not support nested blocks inside condition, cannot possibly predict all possible combinations for match block
     # also not eager to write special logic requiring that block to be sampled first
     # Define condition to match any characters not in start, end, or separator symbols
     condition = pp.Combine(
-                    pp.ZeroOrMore(~pp.Literal("::") + pp.Char(pp.printables) + OPT_WS + ~pp.Literal(parser_config.variant_end))
+                    pp.ZeroOrMore(~pp.Literal("::") + ~pp.Literal(parser_config.variant_end) + ~pp.Literal(parser_config.variant_start) + pp.Char(pp.printables) + OPT_WS)
                 )
+    
+    if_else_values = prompt()("if_value") + pp.Opt(DELIM + prompt()("else_value"))
     
     condition = condition.addParseAction(reject_if_real_number)("condition")
     text_pair_block = pp.Group(
         START_EXP
-        + OPT_WS
         + condition
         + OPT_WS
         + SEPARATOR
         + OPT_WS
-        + pp.Optional(prompt()("if_value"))
+        + if_else_values
         + OPT_WS
-        + pp.Optional(DELIM)
-        + pp.Optional(prompt()("else_value"))
         + END_EXP
     )
     

@@ -172,6 +172,11 @@ class TestRandomGenerator:
         prompts = generator.generate(s)
         assert prompts == ['waterbolt']
 
+    def test_condition_basic_if_else_3(self, generator: RandomPromptGenerator):
+        s = """water{fire::|bolt}"""
+        prompts = generator.generate(s)
+        assert prompts == ['waterbolt']
+
     def test_condition_chance_wildcard(self, generator: RandomPromptGenerator):
         s = """__condition_chance_test/chance__ __condition_chance_test/condition__"""
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
@@ -197,6 +202,20 @@ class TestRandomGenerator:
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
         assert prompts == ['person, fireplacebolt    , person is resting ', 'person, fireplacestrike    , person is resting ', 'person, fireplacebolt    , person is resting ', 'person, fireplacebolt    , person is resting ', 'person, fireplaceblast    , person is resting ']
 
+    def test_condition_basic_nested_5(self, generator: RandomPromptGenerator):
+        s = r"""fire,
+                {
+                    {(water|fire|air)::
+                        {elemental|spell|rune}
+                    }
+                }"""
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['fire,\n                spell\n                    \n                ',
+                           'fire,\n                rune\n                    \n                ',
+                           'fire,\n                spell\n                    \n                ',
+                           'fire,\n                spell\n                    \n                ',
+                           'fire,\n                elemental\n                    \n                ']
+
     def test_condition_basic_wildcard(self, generator: RandomPromptGenerator):
         s = ("""__condition_chance_test/chance__ __condition_chance_test/condition__""")
         prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
@@ -217,3 +236,9 @@ class TestRandomGenerator:
         s = """fireplace{fire\\s::ball}"""
         prompts = generator.generate(s)
         assert prompts == ["fireplace"]
+        
+    def test_condition_negative_4(self, generator: RandomPromptGenerator):
+        # should be a variant
+        s = ("""{(water:1.2) (fire:1.6)| (earth:1.8) {0.08::air}| 0.15::(wild:1.8) {0.3::(magic:1.8)}}""")
+        prompts = generator.generate(s, 5, seeds=['1','2','3','4','5'])
+        assert prompts == ['(earth:1.8) ', '(earth:1.8) ', '(earth:1.8) ', '(earth:1.8) ', '(water:1.2) (fire:1.6)']

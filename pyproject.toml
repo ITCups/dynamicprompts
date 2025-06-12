@@ -3,12 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "dynamicprompts"
+name = "dynamicprompts-itcups"
 dynamic = ["version"]
 description = "Dynamic prompts templating library for Stable Diffusion"
-homepage = "https://github.com/adieyal/dynamicprompts"
+homepage = "https://github.com/ITCups/dynamicprompts"
 authors = [
-    { name = "Adi Eyal", email = "adi@clearforest.io" }
+    { name = "Adi Eyal", email = "adi@clearforest.io" },
+    { name = "Igor Toropov", email = "it.cups.54@gmail.com" }
 ]
 license = "MIT"
 readme = "README.md"
@@ -94,6 +95,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "spacy.*"
 ignore_missing_imports = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dynamicprompts"]
 
 [tool.coverage.report]
 exclude_lines = [

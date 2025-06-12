@@ -46,7 +46,7 @@ class SamplingContext:
     variables: dict[str, Command] = dataclasses.field(default_factory=dict)
     # used during generation, to get intermediate about generation
     # for example: used in conditional commands, to search against so far generated prompt
-    prompt_meta: PromptMeta = PromptMeta()
+    prompt_meta: PromptMeta = dataclasses.field(default_factory=PromptMeta)
 
     # Value for variables that aren't defined in the present context.
     # None will raise an error.

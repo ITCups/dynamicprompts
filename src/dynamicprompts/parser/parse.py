@@ -305,11 +305,19 @@ def _configure_probabilities(
     parser_config: ParserConfig,
     prompt: pp.ParserElement,
 ) -> pp.ParserElement:
+    def accept_if_real_number(tokens):
+        condition_str = tokens[0]
+        stripped = condition_str.strip()
+        try:
+            f = float(stripped)
+        except ValueError:
+            raise pp.ParseException(f"Token has to be a real number: got({tokens})")
+        return f
     START_EXP = pp.Suppress(parser_config.variant_start)
     END_EXP = pp.Suppress(parser_config.variant_end)
     SEPARATOR = pp.Literal("::")
 
-    chance_value = pp.Word(pp.nums + ".").setParseAction(lambda t: float(t[0]))("chance")
+    chance_value = pp.Word(pp.nums + ".").setParseAction(accept_if_real_number)("chance")
     probability_block = pp.Group(
         START_EXP
         + OPT_WS

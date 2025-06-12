@@ -20,7 +20,7 @@ from dynamicprompts.wildcards import WildcardManager
 from dynamicprompts.wildcards.values import WildcardValues
 from pytest_lazyfixture import lazy_fixture
 
-from tests.conftest import sampling_context_lazy_fixtures
+from tests.conftest import sampling_context_lazy_fixtures, WILDCARD_DATA_DIR
 from tests.consts import RED_GREEN_BLUE
 from tests.samplers.utils import (
     patch_random_sampler_variant_choices,
@@ -599,3 +599,32 @@ class TestPrompts:
         for prompt in prompts:
             assert "( " not in prompt
             assert " :" not in prompt
+
+    def test_condition_command_multilevel_context(self):
+        wm = WildcardManager(path=WILDCARD_DATA_DIR, wildcard_wrap="__")
+        seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        prompts = []
+        for seed in seeds:
+            context_level_1_a = SamplingContext(wildcard_manager=wm, default_sampling_method=SamplingMethod.RANDOM, context_key="context_level_1_a")
+            context_level_1_b = SamplingContext(wildcard_manager=wm, default_sampling_method=SamplingMethod.RANDOM, context_key="context_level_1_b")
+            context_level_2 = SamplingContext(wildcard_manager=wm, default_sampling_method=SamplingMethod.RANDOM, context_key="context_level_2").add_previous_context([context_level_1_a, context_level_1_b])
+            context_level_3 = SamplingContext(wildcard_manager=wm, default_sampling_method=SamplingMethod.RANDOM, context_key="context_level_3").add_previous_context([context_level_1_a, context_level_1_b, context_level_2])
+            context_level_1_a.rand.seed(seed)
+            context_level_1_b.rand.seed(seed)
+            context_level_2.rand.seed(seed)
+            context_level_3.rand.seed(seed)
+            prompt_level_1_a = str(next(context_level_1_a.sample_prompts("{water|fire}", 1)))
+            prompt_level_1_b = str(next(context_level_1_b.sample_prompts("{air|earth}", 1)))
+            prompt_level_2 = str(next(context_level_2.sample_prompts("{context_level_1_a$$water::dripping|context_level_1_a$$fire::burning} {context_level_1_b$$air::flowing|context_level_1_b$$earth::solidifying}", 1)))
+            prompt_level_3 = str(next(context_level_3.sample_prompts("{context_level_2$$(burning|flowing)::above} {context_level_2$$(dripping|solidifying)::bellow}", 1)))
+            prompts.append([prompt_level_1_a, prompt_level_1_b, prompt_level_2, prompt_level_3])
+        assert prompts == [['fire', 'air', 'burning flowing', 'above '],
+                           ['water', 'earth', 'dripping solidifying', ' bellow'],
+                           ['fire', 'air', 'burning flowing', 'above '],
+                           ['water', 'air', 'dripping flowing', 'above bellow'],
+                           ['fire', 'earth', 'burning solidifying', 'above bellow'],
+                           ['water', 'air', 'dripping flowing', 'above bellow'],
+                           ['fire', 'earth', 'burning solidifying', 'above bellow'],
+                           ['water', 'air', 'dripping flowing', 'above bellow'],
+                           ['fire', 'air', 'burning flowing', 'above '],
+                           ['water', 'air', 'dripping flowing', 'above bellow']] 

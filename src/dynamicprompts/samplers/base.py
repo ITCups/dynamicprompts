@@ -96,12 +96,16 @@ class Sampler:
         context: SamplingContext,
     ) -> ResultGen:
         while True:
-            pattern = command.regex_expression
-            
-            match = re.search(pattern, context.prompt_meta.collected_text, flags=re.IGNORECASE)
-            if match:
-                yield next(context.generator_from_command(command.if_value))
-            else:
+            found = False
+            for condition in command.conditions_list:
+                pattern = condition.regex_expression
+                targeted_context_meta = context.previous_steps_contexts[condition.context_key].prompt_meta.collected_text if condition.context_key else context.prompt_meta.collected_text
+                match = re.search(pattern, targeted_context_meta, flags=re.IGNORECASE)
+                if match:
+                    found = True
+                    yield next(context.generator_from_command(condition.if_value))
+                    break
+            if not found:
                 yield next(context.generator_from_command(command.else_value))
 
     def _get_sequence(

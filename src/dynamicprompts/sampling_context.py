@@ -4,7 +4,7 @@ import dataclasses
 import warnings
 from itertools import islice
 from random import Random
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Dict, Iterable, Self
 
 from dynamicprompts.commands import Command, LiteralCommand
 from dynamicprompts.commands.variable_commands import VariableAssignmentCommand
@@ -13,6 +13,7 @@ from dynamicprompts.enums import SamplingMethod
 from dynamicprompts.parser.config import ParserConfig, default_parser_config
 from dynamicprompts.types import ResultGen, SamplingResult, PromptMeta
 from dynamicprompts.wildcards import WildcardManager
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from dynamicprompts.samplers import Sampler
@@ -47,6 +48,10 @@ class SamplingContext:
     # used during generation, to get intermediate about generation
     # for example: used in conditional commands, to search against so far generated prompt
     prompt_meta: PromptMeta = dataclasses.field(default_factory=PromptMeta)
+    # key of the context, can be any string, used to identify context in the 'previous_steps_contexts' for future generations
+    context_key: str = str(uuid4())
+    # Content of previous steps, used for comfyui nodes and conditional commands, to generate prompt based on previous nodes results
+    previous_steps_contexts: Dict[str, SamplingContext] = dataclasses.field(default_factory=dict)
 
     # Value for variables that aren't defined in the present context.
     # None will raise an error.
@@ -60,6 +65,13 @@ class SamplingContext:
 
     def with_add_result_to_meta(self, conctext: SamplingContext,  add_result_to_meta: bool) -> SamplingContext:
         return dataclasses.replace(conctext, add_result_to_meta=add_result_to_meta)
+
+    def add_previous_context(self, contexts: SamplingContext | Iterable[SamplingContext]):
+        if isinstance(contexts, SamplingContext):
+            contexts = [contexts]
+        for context in contexts:
+            self.previous_steps_contexts[context.context_key] = context
+        return self
 
     @property
     def default_sampler(self) -> Sampler:

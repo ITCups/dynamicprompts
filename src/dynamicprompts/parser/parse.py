@@ -49,6 +49,7 @@ from dynamicprompts.commands import (
     WrapCommand,
     ProbabilityCommand,
     ConditionCommand,
+    Condition,
     CommentCommand
 )
 from dynamicprompts.commands.variable_commands import (
@@ -281,20 +282,26 @@ def _configure_condition_parser(
     # NOTE: current implementation does not support nested blocks inside condition, cannot possibly predict all possible combinations for match block
     # also not eager to write special logic requiring that block to be sampled first
     # Define condition to match any characters not in start, end, or separator symbols
-    condition = pp.Combine(
-                    pp.ZeroOrMore(~pp.Literal("::") + ~pp.Literal(parser_config.variant_end) + ~pp.Literal(parser_config.variant_start) + pp.Char(pp.printables) + OPT_WS)
+    expression = pp.Combine(
+                    pp.ZeroOrMore(~pp.Literal(SEPARATOR_SYMBOLS)
+                    + ~pp.Literal(parser_config.variant_end)
+                    + ~pp.Literal(parser_config.variant_start)
+                    + pp.Char(pp.printables)
+                    + OPT_WS)
                 )
-    
-    if_else_values = prompt()("if_value") + pp.Opt(DELIM + prompt()("else_value"))
-    
-    condition = condition.addParseAction(reject_if_real_number)("condition")
+    expression = expression.addParseAction(reject_if_real_number)("regex_expr")
+    context_key = pp.Combine(
+                    pp.ZeroOrMore(~pp.Literal(SEPARATOR_SYMBOLS)
+                    + ~pp.Literal(parser_config.variant_end)
+                    + ~pp.Literal(parser_config.variant_start)
+                    + pp.Char(pp.printables))
+                )
+    condition = pp.Group(pp.Optional(context_key("context_key") + variant_delim) + expression + SEPARATOR + OPT_WS + prompt()("if_value"))
+    if_conditions_list = pp.Group(pp.delimited_list(condition, delim="|"))
     text_pair_block = pp.Group(
         START_EXP
-        + condition
-        + OPT_WS
-        + SEPARATOR
-        + OPT_WS
-        + if_else_values
+        + if_conditions_list("conditions_list")
+        + pp.Opt(DELIM + prompt()("else_value"))
         + OPT_WS
         + END_EXP
     )
@@ -509,10 +516,16 @@ def _parse_inline_comment_command(parse_result: pp.ParseResults) -> ConditionCom
     return None
 
 def _parse_condition_command(parse_result: pp.ParseResults) -> ConditionCommand:
-    parts = parse_result[0].as_dict()
-    if_value = parts.get("if_value", LiteralCommand(""))
+    parts =  parse_result[0].as_dict()
+    raw_conditions_list = parts.get("conditions_list")
+    conditions_list = []
+    for c in raw_conditions_list:
+        key = c.get("context_key", None)
+        expr = c.get("regex_expr")
+        if_value = c.get("if_value")
+        conditions_list.append(Condition(context_key=key, regex_expression=expr, if_value=if_value))
     else_value = parts.get("else_value", LiteralCommand(""))
-    return ConditionCommand(if_value=if_value, else_value=else_value, regex_expression=parts["condition"])
+    return ConditionCommand(conditions_list=conditions_list, else_value=else_value)
 
 def _parse_wildcard_variable_access_command(
     parse_result: pp.ParseResults,
